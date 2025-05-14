@@ -1,18 +1,19 @@
 import os
 import json
 import time
-import base64
+import csv
 from PIL import Image
 import google.generativeai as genai
 
-# Setup
+# Setup Gemini
 genai.configure(api_key="AIzaSyCISj-f2EHTYXDEY7MqaHnTXopoQthUvfY")
 model = genai.GenerativeModel(model_name="models/gemini-2.0-flash")
 
 # Paths
 image_folder = "path/to/abo/images"
 metadata_folder = "path/to/abo/json"
-output_file = "vqa_results.json"
+json_output_file = "vqa_results.json"
+csv_output_file = "vqa_results.csv"
 
 # Prompts
 prompts = [
@@ -45,8 +46,11 @@ def parse_json_response(response_text):
     except:
         return {"error": "Invalid JSON", "raw": response_text}
 
-# Processing loop
+# Initialize result containers
 results = []
+csv_rows = []
+
+# Scan image files
 image_files = [f for f in os.listdir(image_folder) if f.endswith(".png") or f.endswith(".jpg")]
 
 for img_file in image_files:
@@ -61,23 +65,41 @@ for img_file in image_files:
     metadata = load_metadata(meta_path)
 
     for prompt in prompts:
-        print(f"Processing {img_file} with prompt: {'easy' if prompt == prompts[0] else 'hard'}")
+        difficulty = "easy" if prompt == prompts[0] else "hard"
+        print(f"Processing {img_file} with prompt: {difficulty}")
         try:
             response_text = call_gemini(image_bytes, metadata, prompt)
             parsed = parse_json_response(response_text)
+
             results.append({
                 "image": img_file,
-                "difficulty": "easy" if prompt == prompts[0] else "hard",
+                "difficulty": difficulty,
                 "qa": parsed
             })
+
+            # If the response is valid and contains required fields, add to CSV
+            if all(k in parsed for k in ["question", "option_1", "option_2", "option_3", "option_4"]):
+                csv_rows.append([
+                    parsed["question"],
+                    parsed["option_1"],
+                    parsed["option_2"],
+                    parsed["option_3"],
+                    parsed["option_4"]
+                ])
         except Exception as e:
             print(f"Error on {img_file}: {e}")
 
-        # Respect Gemini Flash free-tier limits (15 RPM = 1 req every 4 sec)
-        time.sleep(5)
+        time.sleep(5)  # To avoid hitting Gemini Flash RPM limits
 
-# Save all results
-with open(output_file, "w") as f:
-    json.dump(results, f, indent=2)
+# Save JSON
+with open(json_output_file, "w") as jf:
+    json.dump(results, jf, indent=2)
 
-print(f"Saved all results to {output_file}")
+# Save CSV
+with open(csv_output_file, "w", newline='', encoding="utf-8") as cf:
+    writer = csv.writer(cf)
+    writer.writerow(["question", "option_1", "option_2", "option_3", "option_4"])
+    writer.writerows(csv_rows)
+
+print(f"Saved {len(results)} responses to {json_output_file}")
+print(f"Saved {len(csv_rows)} valid QAs to {csv_output_file}")
