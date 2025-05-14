@@ -18,7 +18,7 @@ csv_output_file = "vqa_results.csv"
 # Prompts
 prompts = [
     "You are a VQA system. Given an image and metadata, generate an EASY multiple-choice question grounded in visible content. Return a JSON with: question, option_1, option_2, option_3, option_4, correct_option (as 'option_X').",
-    "You are a VQA system. Given an image and metadata, generate a HARD multiple-choice question that requires more reasoning. Make sure it's grounded in visible content and return a JSON with the same structure."
+    "You are a VQA system. Given an image and metadata, generate a HARD multiple-choice question that focuses on a specific part, attribute or feature. Make sure it's grounded in visible content and return a JSON with the same structure."
 ]
 
 # Helpers
