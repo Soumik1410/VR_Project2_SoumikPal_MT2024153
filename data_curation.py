@@ -142,7 +142,7 @@ for img_file in image_files:
             break
 
         difficulty = "easy" if prompt == prompts[0] else "hard"
-        print(f"Processing {img_file} ({image_id}) with prompt: {difficulty}")
+        print(f"[{gemini_call_count + 1} / 990] : Processing {img_file} ({image_id}) with prompt: {difficulty}")
         try:
             response_text = call_gemini(image_bytes, rich_metadata, prompt)
             parsed = parse_json_response(response_text)
