@@ -2,33 +2,43 @@ import os
 import json
 import time
 import csv
+import re
 from PIL import Image
 import google.generativeai as genai
 
-# Setup Gemini
 genai.configure(api_key="AIzaSyCISj-f2EHTYXDEY7MqaHnTXopoQthUvfY")
 model = genai.GenerativeModel(model_name="models/gemini-2.0-flash")
-
-# Paths
-image_folder = "path/to/abo/images"
-metadata_folder = "path/to/abo/json"
+image_folder = r"C:\IIITB MTech Sem 2\VR\VR Project 2\ABO Dataset\abo-images-small\images\small\00"
+csv_metadata_path = r"C:\IIITB MTech Sem 2\VR\VR Project 2\ABO Dataset\abo-images-small\images\metadata\images.csv"
 json_output_file = "vqa_results.json"
 csv_output_file = "vqa_results.csv"
-
-# Prompts
 prompts = [
     "You are a VQA system. Given an image and metadata, generate an EASY multiple-choice question grounded in visible content. Return a JSON with: question, option_1, option_2, option_3, option_4, correct_option (as 'option_X').",
-    "You are a VQA system. Given an image and metadata, generate a HARD multiple-choice question that focuses on a specific part, attribute or feature. Make sure it's grounded in visible content and return a JSON with the same structure."
+    "You are a VQA system. Given an image and metadata, generate a HARD multiple-choice question that focuses on a specific part, attribute or feature. Make sure it's grounded in visible content and return a JSON with: question, option_1, option_2, option_3, option_4, correct_option (as 'option_X')."
 ]
 
-# Helpers
+
+def load_csv_metadata(csv_path):
+    metadata_dict = {}
+    with open(csv_path, newline='', encoding="utf-8") as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            metadata_dict[row['path']] = row
+    return metadata_dict
+
+def find_metadata_for_image(image_filename, metadata_dict):
+    pattern = re.compile(rf"^[a-zA-Z0-9]{{2}}/{re.escape(image_filename)}$")
+    for path_key in metadata_dict:
+        if pattern.match(path_key):
+            return {
+                "width": metadata_dict[path_key].get("width"),
+                "height": metadata_dict[path_key].get("height")
+            }
+    return None
+
 def load_image_bytes(image_path):
     with open(image_path, "rb") as f:
         return f.read()
-
-def load_metadata(metadata_path):
-    with open(metadata_path, "r") as f:
-        return json.load(f)
 
 def call_gemini(image_bytes, metadata, prompt):
     response = model.generate_content(
@@ -42,27 +52,30 @@ def call_gemini(image_bytes, metadata, prompt):
 
 def parse_json_response(response_text):
     try:
-        return json.loads(response_text)
+        cleaned = re.sub(r"^```json|^```|```$", "", response_text.strip(), flags=re.MULTILINE).strip()
+        return json.loads(cleaned)
     except:
         return {"error": "Invalid JSON", "raw": response_text}
 
-# Initialize result containers
+csv_metadata = load_csv_metadata(csv_metadata_path)
+
+
 results = []
 csv_rows = []
 
-# Scan image files
+
 image_files = [f for f in os.listdir(image_folder) if f.endswith(".png") or f.endswith(".jpg")]
 
 for img_file in image_files:
     img_path = os.path.join(image_folder, img_file)
-    meta_path = os.path.join(metadata_folder, os.path.splitext(img_file)[0] + ".json")
+    metadata = find_metadata_for_image(img_file, csv_metadata)
+    #print(metadata)
 
-    if not os.path.exists(meta_path):
-        print(f"Skipping {img_file}: no metadata found.")
+    if not metadata:
+        print(f"Skipping {img_file}: no matching CSV metadata found.")
         continue
 
     image_bytes = load_image_bytes(img_path)
-    metadata = load_metadata(meta_path)
 
     for prompt in prompts:
         difficulty = "easy" if prompt == prompts[0] else "hard"
@@ -77,28 +90,28 @@ for img_file in image_files:
                 "qa": parsed
             })
 
-            # If the response is valid and contains required fields, add to CSV
-            if all(k in parsed for k in ["question", "option_1", "option_2", "option_3", "option_4"]):
+            required_keys = ["question", "option_1", "option_2", "option_3", "option_4", "correct_option"]
+            if all(k in parsed for k in required_keys):
                 csv_rows.append([
                     parsed["question"],
                     parsed["option_1"],
                     parsed["option_2"],
                     parsed["option_3"],
-                    parsed["option_4"]
+                    parsed["option_4"],
+                    parsed["correct_option"]
                 ])
         except Exception as e:
             print(f"Error on {img_file}: {e}")
 
-        time.sleep(5)  # To avoid hitting Gemini Flash RPM limits
+        time.sleep(4)
 
-# Save JSON
+
 with open(json_output_file, "w") as jf:
     json.dump(results, jf, indent=2)
 
-# Save CSV
 with open(csv_output_file, "w", newline='', encoding="utf-8") as cf:
     writer = csv.writer(cf)
-    writer.writerow(["question", "option_1", "option_2", "option_3", "option_4"])
+    writer.writerow(["question", "option_1", "option_2", "option_3", "option_4", "correct_option"])
     writer.writerows(csv_rows)
 
 print(f"Saved {len(results)} responses to {json_output_file}")
