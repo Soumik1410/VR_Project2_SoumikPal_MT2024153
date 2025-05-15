@@ -32,7 +32,8 @@ def find_metadata_for_image(image_filename, metadata_dict):
         if pattern.match(path_key):
             return {
                 "width": metadata_dict[path_key].get("width"),
-                "height": metadata_dict[path_key].get("height")
+                "height": metadata_dict[path_key].get("height"),
+                "path": path_key
             }
     return None
 
@@ -74,6 +75,7 @@ for img_file in image_files:
     if not metadata:
         print(f"Skipping {img_file}: no matching CSV metadata found.")
         continue
+    image_path = metadata.pop("path")
 
     image_bytes = load_image_bytes(img_path)
 
@@ -93,6 +95,7 @@ for img_file in image_files:
             required_keys = ["question", "option_1", "option_2", "option_3", "option_4", "correct_option"]
             if all(k in parsed for k in required_keys):
                 csv_rows.append([
+                    image_path,
                     parsed["question"],
                     parsed["option_1"],
                     parsed["option_2"],
@@ -111,7 +114,7 @@ with open(json_output_file, "w") as jf:
 
 with open(csv_output_file, "w", newline='', encoding="utf-8") as cf:
     writer = csv.writer(cf)
-    writer.writerow(["question", "option_1", "option_2", "option_3", "option_4", "correct_option"])
+    writer.writerow(["image_path", "question", "option_1", "option_2", "option_3", "option_4", "correct_option"])
     writer.writerows(csv_rows)
 
 print(f"Saved {len(results)} responses to {json_output_file}")
