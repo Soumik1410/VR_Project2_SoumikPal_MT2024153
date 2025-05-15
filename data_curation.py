@@ -9,11 +9,11 @@ import google.generativeai as genai
 
 genai.configure(api_key="AIzaSyCISj-f2EHTYXDEY7MqaHnTXopoQthUvfY")
 model = genai.GenerativeModel(model_name="models/gemini-2.0-flash")
-image_folder = r"C:\IIITB MTech Sem 2\VR\VR Project 2\ABO Dataset\abo-images-small\images\test"
+image_folder = r"C:\IIITB MTech Sem 2\VR\VR Project 2\ABO Dataset\abo-images-small\images\small\6a"
 csv_metadata_path = r"C:\IIITB MTech Sem 2\VR\VR Project 2\ABO Dataset\abo-images-small\images\metadata\images.csv"
 json_metadata_dir = r"C:\IIITB MTech Sem 2\VR\VR Project 2\ABO Dataset\abo-listings\listings\listings"
-json_output_file = "vqa_single_answer_results.json"
-csv_output_file = "vqa_single_answer_results.csv"
+json_output_file = "vqa_single_answer_results_soumik_6a.json"
+csv_output_file = "vqa_single_answer_results_soumik_6a.csv"
 
 # Prompts
 prompts = [
@@ -108,8 +108,15 @@ csv_rows = []
 # Filter only images in folder
 image_files = [f for f in os.listdir(image_folder) if f.endswith(".png") or f.endswith(".jpg")]
 
+MAX_GEMINI_CALLS = 990
+gemini_call_count = 0
+
 # Process each image
 for img_file in image_files:
+    if gemini_call_count >= MAX_GEMINI_CALLS:
+        print(f"Reached limit of {MAX_GEMINI_CALLS} Gemini calls. Stopping.")
+        break
+
     img_path = os.path.join(image_folder, img_file)
     base_info = find_image_id_and_path(img_file, csv_metadata)
 
@@ -130,6 +137,10 @@ for img_file in image_files:
     image_bytes = load_image_bytes(img_path)
 
     for prompt in prompts:
+        if gemini_call_count >= MAX_GEMINI_CALLS:
+            print(f"Reached limit of {MAX_GEMINI_CALLS} Gemini calls. Stopping.")
+            break
+
         difficulty = "easy" if prompt == prompts[0] else "hard"
         print(f"Processing {img_file} ({image_id}) with prompt: {difficulty}")
         try:
@@ -149,6 +160,7 @@ for img_file in image_files:
                     parsed["question"],
                     parsed["answer"]
                 ])
+            gemini_call_count += 1
         except Exception as e:
             print(f"Error processing {img_file}: {e}")
         time.sleep(4)
