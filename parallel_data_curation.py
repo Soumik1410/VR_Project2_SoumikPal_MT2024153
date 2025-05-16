@@ -7,13 +7,13 @@ from PIL import Image
 import google.generativeai as genai
 
 
-genai.configure(api_key="AIzaSyB0ciO2AzwOJF3DBB5H4tB_jSZwggsxXOk")
+genai.configure(api_key="AIzaSyDKMRwhk05Nri6nR0_BMK3XniC9Xg1scXs")
 model = genai.GenerativeModel(model_name="models/gemini-2.0-flash")
-image_folder = r"C:\IIITB MTech Sem 2\VR\VR Project 2\ABO Dataset\abo-images-small\images\small\82"
+image_folder = r"C:\IIITB MTech Sem 2\VR\VR Project 2\ABO Dataset\abo-images-small\images\small\4c"
 csv_metadata_path = r"C:\IIITB MTech Sem 2\VR\VR Project 2\ABO Dataset\abo-images-small\images\metadata\images.csv"
 json_metadata_dir = r"C:\IIITB MTech Sem 2\VR\VR Project 2\ABO Dataset\abo-listings\listings\listings"
-json_output_file = "vqa_single_answer_results_soumik_82.json"
-csv_output_file = "vqa_single_answer_results_soumik_82.csv"
+json_output_file = "vqa_single_answer_results_soumik_4c.json"
+csv_output_file = "vqa_single_answer_results_soumik_4c.csv"
 
 # Prompts
 prompts = [
