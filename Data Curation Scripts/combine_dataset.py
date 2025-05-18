@@ -2,10 +2,10 @@ import os
 import pandas as pd
 import shutil
 
-csv_input_dir = r"C:\IIITB MTech Sem 2\VR\VR Project 2\Subset"
+csv_input_dir = r"C:\IIITB MTech Sem 2\VR\VR Project 2\Inference"
 base_image_path = r"C:\IIITB MTech Sem 2\VR\VR Project 2\ABO Dataset\abo-images-small\images\small"
-output_combined_csv = r"C:\IIITB MTech Sem 2\VR\VR Project 2\Subset\combined_vqa_single_answer.csv"
-output_image_folder = r"C:\IIITB MTech Sem 2\VR\VR Project 2\Subset\images"
+output_combined_csv = r"C:\IIITB MTech Sem 2\VR\VR Project 2\Inference\combined_inference_vqa_single_answer.csv"
+output_image_folder = r"C:\IIITB MTech Sem 2\VR\VR Project 2\Inference\images"
 
 csv_files = [f for f in os.listdir(csv_input_dir) if f.endswith(".csv")]
 combined_df = pd.DataFrame()
